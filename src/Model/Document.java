@@ -226,7 +226,7 @@ public class Document implements Comparable<Document> {
     }
 
     /**
-     * Fungsi untuk mensteming content dalam bahasa indonesia
+     * Fungsi untuk mensteming content dalam bahasa indonesiasfsdfsdfsdfs
      */
     public void IndonesiaStemming() {
         String text = content;
