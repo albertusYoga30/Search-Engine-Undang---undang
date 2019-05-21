@@ -7,18 +7,15 @@ package Model;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.function.Consumer;
+
 /**
  *
- * @author Nx
+ * @author admin
  */
 public class InvertedIndex {
-     private ArrayList<Document> listOfDocument = new ArrayList<Document>();
+
+    private ArrayList<Document> listOfDocument = new ArrayList<Document>();
     private ArrayList<Term> dictionary = new ArrayList<Term>();
 
     public InvertedIndex() {
@@ -333,9 +330,9 @@ public class InvertedIndex {
             int N = listOfDocument.size();
             // jumlah dokumen dengan term i
             int ni = getDocumentFrequency(term);
+            double nni = (double) N / ni;
             // idf = log10(N/ni)
-            double Nni = (double) N / ni;
-            return Math.log10(Nni);
+            return Math.log10(nni);
         } else {
             // term tidak ada
             // nilai idf = 0
@@ -353,6 +350,7 @@ public class InvertedIndex {
     public int getTermFrequency(String term, int idDocument) {
         Document document = new Document();
         document.setId(idDocument);
+        //cek apakah dokumen ada
         int pos = Collections.binarySearch(listOfDocument, document);
         if (pos >= 0) {
             ArrayList<Posting> tempPosting = listOfDocument.get(pos).getListofPosting();
@@ -374,66 +372,67 @@ public class InvertedIndex {
      * @param idDocument
      */
     public ArrayList<Posting> makeTFIDF(int idDocument) {
-        // buat posting list hasil
-        ArrayList<Posting> result = new ArrayList<Posting>();
-        // buat document temporary, sesuai passing parameter
-        Document temp = new Document(idDocument);
-        // cek document temp, ada di dalam list document?
-        int cari = Collections.binarySearch(listOfDocument, temp);
-        // jika ada, variable cari akan berisi indeks. nilai lebih dari 0
-        if (cari >= 0) {
-            // dokumen ada
-            // baca dokumen sesuai indek di list dokumen
-            temp = listOfDocument.get(cari);
-            // buat posting list dengan bobot masih 0
-            result = temp.getListofPosting();
-            // isi bobot dari posting list
-            for (int i = 0; i < result.size(); i++) {
-                // ambil term
-                String tempTerm = result.get(i).getTerm();
-                // cari idf
-                double idf = getInverseDocumentFrequency(tempTerm);
-                // cari tf
-                int tf = result.get(i).getNumberOfTerm();
-                // hitung bobot
-                double bobot = tf * idf;
-                // set bobot pada posting
-                result.get(i).setWeight(bobot);
-            }
-            Collections.sort(result);
+        //buat dokumen temporary, sesuai parsing parameter
+        Document document = new Document();
+        document.setId(idDocument);
+        //cek apakah dokumen ada
+        int cek = Collections.binarySearch(listOfDocument, document);
+        if (cek < 0) {
+            //dokumen tidak ada
+            return null;
         } else {
-            // dokumen tidak ada
+            //dokumen ada
+            //baca dokumen sesuai indeks di list dokumen
+            document = listOfDocument.get(cek);
+            //buat posting list tanpa nilai TFIDF
+            ArrayList<Posting> result = document.getListofPosting();
+            //urutkan Postinglist
+            Collections.sort(result);
+            //isi atribut weight dari masing" posting
+            for (int i = 0; i < result.size(); i++) {
+                //buat tempPosting
+                Posting tempPosting = result.get(i);
+                //panggil fungsi hitung idf
+                double idf = getInverseDocumentFrequency(tempPosting.getTerm());
+                //panggil fungsi hitung tf
+                int tf = tempPosting.getNumberOfTerm();
+                //hitung tfidf
+                double weight = tf * idf;
+                //set bobot pada Posting
+                result.get(i).setWeight(weight);
+            }
+            return result;
         }
-        return result;
     }
 
     /**
      * Fungsi perkalian inner product dari PostingList Atribut yang dikalikan
-     * adalah atribut weight TFIDF dari posting
-     * Ini dikenal dengan istilah penghitungan jarak Euclidean
+     * adalah atribut weight TFIDF dari posting ini dikenal dengna istilah
+     * perhitungan jarak eucledien
+     *
      * @param p1
      * @param p2
      * @return
      */
     public double getInnerProduct(ArrayList<Posting> p1,
             ArrayList<Posting> p2) {
-        // urutkan posting list
+        //urutkan posting list
         Collections.sort(p2);
         Collections.sort(p1);
         // buat temp hasil
         double result = 0.0;
-        // looping dari posting list p1
+        //looping dari posting list p1
         for (int i = 0; i < p1.size(); i++) {
-            // ambil temp
+            //ambil temp
             Posting temp = p1.get(i);
-            // cari posting di p2
+            //cari posting di p2
             boolean found = false;
             for (int j = 0; j < p2.size() && found == false; j++) {
                 Posting temp1 = p2.get(j);
                 if (temp1.getTerm().equalsIgnoreCase(temp.getTerm())) {
-                    // term sama
+                    //term sama
                     found = true;
-                    // kalikan bobot untuk term yang sama
+                    //kalikan bobot untuk term yang sama
                     result = result + temp1.getWeight() * temp.getWeight();
                 }
             }
@@ -448,78 +447,73 @@ public class InvertedIndex {
      * @return
      */
     public ArrayList<Posting> getQueryPosting(String query) {
-        // buat dokumen
+        //buat dokumen
         Document temp = new Document(-1, query);
-        // buat posting list
+        //buat posting list
         ArrayList<Posting> result = temp.getListofPosting();
-        // hitung bobot
-        // isi bobot dari posting list
-        for (int i = 0; i < result.size(); i++) {
-            // ambil term
-            String tempTerm = result.get(i).getTerm();
-            // cari idf
-            double idf = getInverseDocumentFrequency(tempTerm);
-            // cari tf
-            int tf = result.get(i).getNumberOfTerm();
-            // hitung bobot
-            double bobot = tf * idf;
-            // set bobot pada posting
-            result.get(i).setWeight(bobot);
-        }
         Collections.sort(result);
+        //isi atribut weight dari masing" posting
+        for (int i = 0; i < result.size(); i++) {
+            //buat tempPosting
+            Posting tempPosting = result.get(i);
+            //panggil fungsi hitung idf
+            double idf = getInverseDocumentFrequency(tempPosting.getTerm());
+            //panggil fungsi hitung tf
+            int tf = tempPosting.getNumberOfTerm();
+            //hitung tfidf
+            double weight = tf * idf;
+            //set bobot pada Posting
+            result.get(i).setWeight(weight);
+        }
         return result;
     }
-    
+
     /**
      * Fungsi untuk menghitung panjang dari sebuah posting
-     * Asumsi posting memiliki komponen bobot/weight
+     *
      * @param posting
-     * @return 
+     * @return
      */
-    public double getLengthOfPosting(ArrayList<Posting> posting){
-        double result=0.0;
+    public double getLengthOfPosting(ArrayList<Posting> posting) {
+        //buat temp hasil
+        double result = 0;
         for (int i = 0; i < posting.size(); i++) {
-            // ambil obyek posting
-            Posting post = posting.get(i);
-            // ambil bobot/weight
-            double weight = post.getWeight();
-            // kuadrat bobot
-            weight = weight*weight;
-            // jumlahkan ke result
-            result = result + weight;
+            //jumlahkan masing-masing kuadrat bobot
+            result = result + Math.pow(posting.get(i).getWeight(), 2);
         }
-        // keluarkan akar kuadrat
+        //kembalikan nilai akar dari jumlah kuadrat bobot
         return Math.sqrt(result);
     }
-    
+
     /**
      * Fungsi untuk menghitung cosine similarity
+     *
      * @param posting
      * @param posting1
-     * @return 
+     * @return
      */
     public double getCosineSimilarity(ArrayList<Posting> posting,
-            ArrayList<Posting> posting1){
-        // cari jarak antara posting dan posting 1
-        double hasilDotProduct = getInnerProduct(posting, posting1);
-        // cari panjang posting
+            ArrayList<Posting> posting1) {
+        // cari jarak antar posting antara posting dan posting1
+        double jarak = getInnerProduct(posting, posting1);
+        // cari panjang posting 
         double panjang_posting = getLengthOfPosting(posting);
         // cari panjang posting1
         double panjang_posting1 = getLengthOfPosting(posting1);
-        // hitung cosine similarity
-        double result = 
-                hasilDotProduct / Math.sqrt(panjang_posting*panjang_posting1);
+        //hitung cosine similarity
+        double result = jarak / Math.sqrt(Math.pow(panjang_posting, 2) * Math.pow(panjang_posting1, 2));
         return result;
     }
-    
+
     /**
      * Fungsi untuk mencari berdasar nilai TFIDF
+     *
      * @param query
-     * @return 
+     * @return
      */
-    public ArrayList<SearchingResult> searchTFIDF(String query){
-        // buat list search document
-        ArrayList<SearchingResult> result = new ArrayList<SearchingResult>(); 
+    public ArrayList<SearchingResult> searchTFIDF(String query) {
+        // buat list search dokumen
+        ArrayList<SearchingResult> result = new ArrayList<SearchingResult>();
         // ubah query menjadi array list posting
         ArrayList<Posting> queryPostingList = getQueryPosting(query);
         // buat posting list untuk seluruh dokumen
@@ -527,62 +521,77 @@ public class InvertedIndex {
             // ambil obyek dokumen
             Document doc = listOfDocument.get(i);
             int idDoc = doc.getId();
-            // buat posting list untuk dokumen
+            //buat psoting list untuk dokumen
             ArrayList<Posting> tempDocWeight = makeTFIDF(idDoc);
-            // hitung jarak antar posting list dokumen dengan posting list query
-            double hasilDotProduct = getInnerProduct(tempDocWeight,queryPostingList);
-            // isi result list
-            if (hasilDotProduct > 0){
-                // buat obyek document hasil cari
+            // hitung jarak antar posting list dokumen dengan psoting list query
+            double hasilDotProduct = getInnerProduct(tempDocWeight, queryPostingList);
+            if (hasilDotProduct > 0) {
                 SearchingResult resultDoc = new SearchingResult(hasilDotProduct, doc);
-                // tambahkan ke list hasil cari
                 result.add(resultDoc);
             }
         }
-        // urutkan hasil cari
+        // urutkan hasil cari dr kecil ke besar
         Collections.sort(result);
+        // urutkan dr besar ke kecil
+        Collections.reverse(result);
         return result;
     }
-    
+
     /**
      * Fungsi untuk mencari dokumen berdasarkan cosine similarity
+     *
      * @param query
-     * @return 
+     * @return
      */
-    public ArrayList<SearchingResult> searchCosineSimilarity(String query){
-        // buat list search document
-        ArrayList<SearchingResult> result = new ArrayList<SearchingResult>(); 
+    public ArrayList<SearchingResult> searchCosineSimilarity(String query) {
+        Document querySteaming = new Document(query);
+        querySteaming.IndonesiaStemming();
+        // buat list search dokumen
+        ArrayList<SearchingResult> result = new ArrayList<SearchingResult>();
         // ubah query menjadi array list posting
-        ArrayList<Posting> queryPostingList = getQueryPosting(query);
+        ArrayList<Posting> queryPostingList = getQueryPosting(querySteaming.getContent());
         // buat posting list untuk seluruh dokumen
         for (int i = 0; i < listOfDocument.size(); i++) {
             // ambil obyek dokumen
             Document doc = listOfDocument.get(i);
             int idDoc = doc.getId();
-            // buat posting list untuk dokumen
+            //buat psoting list untuk dokumen
             ArrayList<Posting> tempDocWeight = makeTFIDF(idDoc);
-            // hitung cosin similarity antar posting list dokumen dengan posting list query
-            double cosineSimilarity = getCosineSimilarity(tempDocWeight,queryPostingList);
-            // isi result list
-            if (cosineSimilarity > 0){
-                // buat obyek document hasil cari
-                SearchingResult resultDoc = new SearchingResult(cosineSimilarity, doc);
-                // tambahkan ke list hasil cari
+            // hitung cosin similarity antar posting list dokumen dengan psoting list query
+            double cosinSimilarity = getCosineSimilarity(tempDocWeight, queryPostingList);
+            if (cosinSimilarity > 0) {
+                SearchingResult resultDoc = new SearchingResult(cosinSimilarity, doc);
                 result.add(resultDoc);
             }
         }
-        // urutkan hasil cari
+        // urutkan hasil cari dr kecil ke besar
         Collections.sort(result);
+        // urutkan dr besar ke kecil
+        Collections.reverse(result);
         return result;
     }
-    
+
     /**
-     * Fungsi untuk membuat list dokumen dari sebuah directory
-     * asumsikan isi file cukup disimpan dalam sebuah obyek String
-     * @param directory 
+     * fungsi untuk membuat list dokumen dari sebuah directory asumsikan isi
+     * file cukup disimpan dalam sebuah obyek String
+     *
+     * @param directory
      */
-    public void readDirectory(File directory){
-        
+    public void readDirectory(File directory) {
+        File files[] = directory.listFiles();
+        for (int i = 0; i < files.length; i++) {
+            // buat document baru
+            Document doc = new Document();
+            doc.setId(i + 1); // set idDoc sama dengan i
+            // baca isi file
+            // Isi file disimpan di atribut content dari objeck document
+            // variabel i merupakan idDocument;
+            File file = files[i];
+            doc.readFile((i + 1), file);
+            // masukkan file isi directory ke list of document pada obye index
+            this.addNewDocument(doc);
+        }
+        // lakukan indexing atau buat dictionary
+        this.makeDictionaryWithTermNumber();
     }
-    
 }

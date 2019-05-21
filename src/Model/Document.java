@@ -1,16 +1,13 @@
-
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
 package Model;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.StringReader;
+import java.io.*;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.Scanner;
-import java.util.StringTokenizer;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.StopFilter;
@@ -21,29 +18,37 @@ import org.apache.lucene.analysis.id.IndonesianAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.Version;
+
 /**
  *
- * @author Nx
+ * @author admin
  */
 public class Document implements Comparable<Document> {
-        private int id;
-    private String content;
-    private String realContent;
+
+    private int id;
+    private String content;//atribut content yg dianalisis
+    private String realContent;//atribut content asli
+    private String judul;
 
     public Document() {
-    }
-
-    public Document(int id) {
-        this.id = id;
+        
     }
 
     public Document(String content) {
         this.content = content;
+        this.realContent = content;
     }
 
     public Document(int id, String content) {
         this.id = id;
         this.content = content;
+        this.realContent = content;
+    }
+
+    public Document(int id, String content, String judul) {
+        this.id = id;
+        this.content = content;
+        this.judul = judul;
     }
 
     /**
@@ -72,6 +77,22 @@ public class Document implements Comparable<Document> {
      */
     public void setId(int id) {
         this.id = id;
+    }
+
+    public String getRealContent() {
+        return realContent;
+    }
+
+    public void setRealContent(String realContent) {
+        this.realContent = realContent;
+    }
+
+    public String getJudul() {
+        return judul;
+    }
+
+    public void setJudul(String judul) {
+        this.judul = judul;
     }
 
     public String[] getListofTerm() {
@@ -130,35 +151,46 @@ public class Document implements Comparable<Document> {
     }
 
     /**
-     * Fungsi untuk membaca sebuah file *.txt dan hasil baca dimasukkan ke
+     * fungsi untuk membaca sebuah file *.txt dan hasil baca dimasukkan ke
      * atribut content
      */
     public void readFile(int idDoc, File file) {
-
-        // simpan idDoc
         this.id = idDoc;
+        String strLine = null;
+        this.judul = file.getName();
+        try {
+            FileReader inputDokumen = new FileReader(file);//membaca inputan sebuah dokumen
+            BufferedReader br = new BufferedReader(inputDokumen);
 
-        // baca file
+            while ((strLine = br.readLine()) != null) {
+                this.setContent(strLine);
+                this.setRealContent(strLine);
+            }
+            br.close();
+        } catch (FileNotFoundException ex) {
+            System.out.println("File Not Found");
+        } catch (Exception e) {
+            System.err.println("Error: " + e.getMessage());
+        }
     }
 
     @Override
     public String toString() {
-        return "Document{" + "id = " + id + ", content = " + content + '}';
+        return "Document{" + "id = " + id + ", content = " + content + ", realContent = " + realContent + '}';
     }
-
+    
     /**
      * Fungsi untuk menghilangkan kata stop word
      */
-    public void removeStopWord() {
-        //asusmi content sudah ada
+    public void removeStopWords(){
+        // asumsi content sudah ada
         String text = content;
         Version matchVersion = Version.LUCENE_7_7_0; // Substitute desired Lucene version for XY
         Analyzer analyzer = new StandardAnalyzer();
         analyzer.setVersion(matchVersion);
-        //ambil stopwordnya
+        // ambil stopwords
         CharArraySet stopWords = EnglishAnalyzer.getDefaultStopSet();
-        //buat token
-
+        // buat token
         TokenStream tokenStream = analyzer.tokenStream(
                 "myField",
                 new StringReader(text.trim()));
@@ -178,13 +210,13 @@ public class Document implements Comparable<Document> {
         }
         content = sb.toString();
     }
-
+    
     /**
-     * Fungsi untuk menghilangkan stop word dan stemming
+     * fungsi untuk menghasilkan stop word dan stemming
      */
-    public void stemming() {
+    public void stemming(){
         String text = content;
-        System.out.println("Text = " + text);
+        System.out.println("Text = "+text);
         Version matchVersion = Version.LUCENE_7_7_0; // Substitute desired Lucene version for XY
         Analyzer analyzer = new StandardAnalyzer();
         analyzer.setVersion(matchVersion);
@@ -208,36 +240,25 @@ public class Document implements Comparable<Document> {
         }
         content = sb.toString();
     }
-
-    /**
-     * @return the realContent
-     */
     
-    public String getRealContent() {
-        String realContent = null;
-        return realContent;
-    }
-
     /**
-     * @param realContent the realContent to set
+     * fungsi untuk menstemming content dalam bahasa indonesia
      */
-    public void setRealContent(String realContent) {
-        this.realContent = realContent;
-    }
-
-    /**
-     * Fungsi untuk mensteming content dalam bahasa indonesiasfsdfsdfsdfs
-     */
-    public void IndonesiaStemming() {
-        String text = content;
-        IndonesianAnalyzer analyzer = new IndonesianAnalyzer();
+    public void IndonesiaStemming(){
+        Version matchVersion = Version.LUCENE_7_7_0; // Substitute desired Lucene version for XY
+        Analyzer analyzer = new IndonesianAnalyzer();
+        analyzer.setVersion(matchVersion);
+        // ambil stopwords
+        CharArraySet stopWords = IndonesianAnalyzer.getDefaultStopSet();
+        // buat token
         TokenStream tokenStream = analyzer.tokenStream(
                 "myField",
-                new StringReader(text.trim()));
-        tokenStream = new PorterStemFilter(tokenStream);
+                new StringReader(content.trim()));
+        // buang stop word
+        tokenStream = new StopFilter(tokenStream, stopWords);
+        // buat string baru tanpa stopword
         StringBuilder sb = new StringBuilder();
         CharTermAttribute charTermAttribute = tokenStream.addAttribute(CharTermAttribute.class);
-
         try {
             tokenStream.reset();
             while (tokenStream.incrementToken()) {
@@ -248,7 +269,5 @@ public class Document implements Comparable<Document> {
             System.out.println("Exception: " + ex);
         }
         content = sb.toString();
-
     }
-    
 }

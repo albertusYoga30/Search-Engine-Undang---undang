@@ -7,18 +7,19 @@ package Model;
 
 /**
  *
- * @author Nx
+ * @author admin
  */
-public class Posting {
+public class Posting implements Comparable<Posting> {
+
     private String term;
     private Document document;
     private int numberOfTerm = 1;
-    private double weight=0.0; // nilai TF-IDF
+    private double weight = 0.0;
 
     public Posting() {
+
     }
 
-    
     public Posting(Document document) {
         this.document = document;
     }
@@ -61,11 +62,11 @@ public class Posting {
         int result = 0;
         result = term.compareToIgnoreCase(posting.getTerm());
         if (result == 0) {
-            if(posting.getDocument()!=null){
-                result = getDocument().getId() - 
-                        posting.getDocument().getId();
+            if (posting.getDocument() != null) {
+                result = getDocument().getId()
+                        - posting.getDocument().getId();
                 return result;
-            } else{
+            } else {
                 return result;
             }
         } else {
@@ -100,6 +101,4 @@ public class Posting {
     public void setWeight(double weight) {
         this.weight = weight;
     }
-
-    
 }
